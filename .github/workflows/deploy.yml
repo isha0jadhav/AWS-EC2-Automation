@@ -1,0 +1,36 @@
+name: Deploy Flask App to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/AWS-EC2-Automation
+
+            echo "Pulling latest code..."
+            git pull origin main
+
+            echo "Installing dependencies..."
+            python3 -m pip install --upgrade pip
+            pip3 install flask
+
+            echo "Stopping old Flask app..."
+            pkill -f "python3 app.py" || true
+
+            echo "Starting Flask app..."
+            nohup python3 app.py > flask.log 2>&1 &
